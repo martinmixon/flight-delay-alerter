@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AIRPORT_STATUS_INFORMATION>
+  <Update_Time>Mon Jul 20 12:00:00 2026 GMT</Update_Time>
+  <Delay_type>
+    <Name>General Arrival/Departure Delay Info</Name>
+    <Arrival_Departure_Delay_List>
+      <Delay>
+        <ARPT>ATL</ARPT>
+        <Reason>WEATHER / LOW CEILINGS</Reason>
+        <Arrival_Departure Type="Departure" Min="15" Max="30" Trend="Steady"/>
+      </Delay>
+    </Arrival_Departure_Delay_List>
+  </Delay_type>
+</AIRPORT_STATUS_INFORMATION>

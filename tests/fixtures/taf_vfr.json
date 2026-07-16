@@ -1,0 +1,20 @@
+[
+  {
+    "icaoId": "KATL",
+    "rawTAF": "KATL 201130Z 2012/2118 27008KT P6SM FEW250",
+    "fcsts": [
+      {
+        "timeFrom": 1784548800,
+        "timeTo": 1784592000,
+        "wdir": 270,
+        "wspd": 8,
+        "wgst": null,
+        "visib": "6+",
+        "wxString": null,
+        "clouds": [
+          { "cover": "FEW", "base": 25000 }
+        ]
+      }
+    ]
+  }
+]

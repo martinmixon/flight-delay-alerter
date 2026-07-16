@@ -1,0 +1,33 @@
+[
+  {
+    "icaoId": "KATL",
+    "rawTAF": "KATL 201130Z 2012/2118 20012G28KT 2SM TSRA BKN008 OVC020CB",
+    "fcsts": [
+      {
+        "timeFrom": 1784548800,
+        "timeTo": 1784570400,
+        "wdir": 200,
+        "wspd": 12,
+        "wgst": 28,
+        "visib": "2",
+        "wxString": "TSRA",
+        "clouds": [
+          { "cover": "BKN", "base": 800 },
+          { "cover": "OVC", "base": 2000 }
+        ]
+      },
+      {
+        "timeFrom": 1784570400,
+        "timeTo": 1784592000,
+        "wdir": 210,
+        "wspd": 8,
+        "wgst": null,
+        "visib": "6",
+        "wxString": null,
+        "clouds": [
+          { "cover": "SCT", "base": 4000 }
+        ]
+      }
+    ]
+  }
+]

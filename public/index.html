@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <title>Flight Delay Alerter</title>
+  <meta name="description" content="Departure-airport delay risk on the days you fly." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Flight Delay Alerter</h1>
+    <p class="subtitle">Departure risk for your upcoming flights</p>
+  </header>
+
+  <main id="trips" class="trips" aria-live="polite">
+    <p class="loading">Loading latest risk data…</p>
+  </main>
+
+  <footer class="app-footer">
+    <p id="updated" class="updated"></p>
+    <button id="refresh" class="refresh" type="button">Refresh</button>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

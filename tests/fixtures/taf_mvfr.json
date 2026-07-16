@@ -1,0 +1,20 @@
+[
+  {
+    "icaoId": "KATL",
+    "rawTAF": "KATL 201130Z 2012/2118 18010KT 4SM BR BKN015",
+    "fcsts": [
+      {
+        "timeFrom": 1784548800,
+        "timeTo": 1784592000,
+        "wdir": 180,
+        "wspd": 10,
+        "wgst": null,
+        "visib": "4",
+        "wxString": "BR",
+        "clouds": [
+          { "cover": "BKN", "base": 1500 }
+        ]
+      }
+    ]
+  }
+]
