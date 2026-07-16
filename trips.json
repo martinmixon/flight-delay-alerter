@@ -7,11 +7,5 @@
     "airline": "DL",
     "flight": "0563",
     "arrival_iata": "MCI"
-  },
-  {
-    "iata": "PHL",
-    "icao": "KPHL",
-    "date": "2026-07-16",
-    "depart_local": "14:00"
   }
 ]
