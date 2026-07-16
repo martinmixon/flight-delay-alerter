@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-07-16T16:50:26Z",
-  "generated_local": "2026-07-16 12:50 EDT",
+  "generated_utc": "2026-07-16T16:55:05Z",
+  "generated_local": "2026-07-16 12:55 EDT",
   "window_days": 2,
   "trips": [
     {
@@ -34,45 +34,6 @@
         "gusty": false,
         "ifr": false,
         "taf_raw": "TAF KLGA 161442Z 1615/1718 28010KT 5SM FU SCT050 BKN250 FM161800 26014G22KT 5SM FU SCT050 BKN250 TEMPO 1619/1623 3SM FU FM162300 31012G21KT 5SM FU FEW050 BKN250 TEMPO 1623/1701 3SM FU FM170100 33009KT 5SM FU BKN250 FM170600 33005KT 6SM FU BKN250 FM171300 01007KT P6SM SCT250"
-      },
-      "sources": {
-        "faa": "ok",
-        "weather": "ok"
-      }
-    },
-    {
-      "iata": "PHL",
-      "icao": "KPHL",
-      "date": "2026-07-16",
-      "depart_local": "14:00",
-      "airline": null,
-      "flight": null,
-      "arrival_iata": null,
-      "verdict": "HIGH",
-      "reasons": [
-        "FAA ground delay program active"
-      ],
-      "faa": {
-        "ground_stop": false,
-        "gdp": true,
-        "closure": false,
-        "delay": null,
-        "reason": "low visibility",
-        "events": [
-          "Ground delay program (avg 1 hour and 6 minutes) \u2014 low visibility"
-        ]
-      },
-      "weather": {
-        "flight_category": "VFR",
-        "ceiling_ft": null,
-        "vis_mi": 6.0,
-        "ts": false,
-        "gust_kt": null,
-        "low_ceiling": false,
-        "low_vis": false,
-        "gusty": false,
-        "ifr": false,
-        "taf_raw": "TAF KPHL 161447Z 1615/1718 24008KT 6SM FU SCT035 SCT250 FM161700 25010G18KT 4SM FU SCT250 FM162100 26013G23KT 6SM FU VCTS SCT050CB SCT250 FM170000 32007KT 3SM FU SCT050 SCT250 FM170300 35007KT 2SM FU SCT250 FM170900 01005KT 3SM FU SCT250"
       },
       "sources": {
         "faa": "ok",
