@@ -9,15 +9,9 @@
     "arrival_iata": "MCI"
   },
   {
-    "iata": "SAT",
-    "icao": "KSAT",
+    "iata": "PHL",
+    "icao": "KPHL",
     "date": "2026-07-16",
-    "depart_local": "13:00"
-  },
-  {
-    "iata": "SEA",
-    "icao": "KSEA",
-    "date": "2026-07-16",
-    "depart_local": "11:00"
+    "depart_local": "14:00"
   }
 ]
