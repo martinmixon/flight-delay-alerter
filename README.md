@@ -3,13 +3,13 @@
 An installable phone app (PWA) that tells you, on days you're flying, whether
 your **departure airport** is likely to cause a delay. It's a static site hosted
 free on GitHub Pages; a scheduled GitHub Action does all the data fetching and
-scoring server-side and commits the result as `public/data.json`, which the app
+scoring server-side and commits the result as `docs/data.json`, which the app
 displays.
 
 ## How it works
 
 ```
-GitHub Action (cron)  ──►  scripts/fetch_and_score.py  ──►  public/data.json  ──►  PWA (GitHub Pages)
+GitHub Action (cron)  ──►  scripts/fetch_and_score.py  ──►  docs/data.json  ──►  PWA (GitHub Pages)
    runs server-side           FAA + NWS weather + Amadeus        committed              displays cards
 ```
 
@@ -41,7 +41,7 @@ The job **never crashes on a failed source** — it records `ok` / `error` /
 ### 1. Enable GitHub Pages
 Push this repo to GitHub, then **Settings → Pages**:
 - **Source:** *Deploy from a branch*
-- **Branch:** `main`, **folder:** `/public`
+- **Branch:** `main`, **folder:** `/docs`
 
 Your app will be served at `https://martinmixon.github.io/flight-delay-alerter/`.
 
@@ -103,7 +103,7 @@ as a standalone app and loads offline with the last cached data.
 
 ### 5. Test it
 **Actions** tab → *Update delay data* → **Run workflow** (`workflow_dispatch`).
-The job runs tests, fetches feeds, scores, and commits `public/data.json` if it
+The job runs tests, fetches feeds, scores, and commits `docs/data.json` if it
 changed. Refresh the app to see the update.
 
 ---
@@ -113,13 +113,13 @@ changed. Refresh the app to see the update.
 ```bash
 pip install -r requirements.txt
 pytest -q                        # run the unit tests
-python scripts/fetch_and_score.py   # fetch live data -> public/data.json
+python scripts/fetch_and_score.py   # fetch live data -> docs/data.json
 ```
 
 Serve the frontend locally:
 
 ```bash
-python -m http.server -d public 8000
+python -m http.server -d docs 8000
 # open http://localhost:8000
 ```
 
@@ -141,7 +141,7 @@ no live calls:
 ## Repo layout
 
 ```
-public/                 # served by GitHub Pages
+docs/                   # served by GitHub Pages
   index.html app.js styles.css
   manifest.webmanifest service-worker.js
   icons/                # PWA icons (192, 512, maskable)

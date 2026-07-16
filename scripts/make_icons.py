@@ -2,9 +2,9 @@
 """Generate the PWA icons with no third-party image libraries.
 
 Draws a brand-blue tile with a white paper-plane glyph and writes:
-  public/icons/icon-192.png          (rounded, for Android home screen)
-  public/icons/icon-512.png          (rounded, high-res)
-  public/icons/icon-512-maskable.png (full-bleed square for maskable safe-area)
+  docs/icons/icon-192.png          (rounded, for Android home screen)
+  docs/icons/icon-512.png          (rounded, high-res)
+  docs/icons/icon-512-maskable.png (full-bleed square for maskable safe-area)
 
 Run: ``py scripts/make_icons.py`` (only needed when changing the icon design;
 the generated PNGs are committed so CI never has to run this).
@@ -13,7 +13,7 @@ import struct
 import zlib
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "public" / "icons"
+OUT = Path(__file__).resolve().parent.parent / "docs" / "icons"
 
 # Brand palette (top -> bottom gradient) and glyph color.
 TOP = (37, 99, 235)      # #2563eb

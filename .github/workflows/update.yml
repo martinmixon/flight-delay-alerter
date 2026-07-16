@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}  # manual "Run workflow" button
 
 permissions:
-  contents: write  # allow the job to commit public/data.json
+  contents: write  # allow the job to commit docs/data.json
 
 concurrency:
   group: update-delay-data
@@ -48,10 +48,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- public/data.json; then
-            echo "No change in public/data.json — nothing to commit."
+          if git diff --quiet -- docs/data.json; then
+            echo "No change in docs/data.json — nothing to commit."
           else
-            git add public/data.json
+            git add docs/data.json
             git commit -m "chore: update delay data [skip ci]"
             git push
           fi
@@ -61,12 +61,12 @@ jobs:
       # To enable Gmail SMTP alerts on HIGH/MODERATE trips:
       #   1. Create a Gmail App Password.
       #   2. Add repo secrets: MAIL_USERNAME, MAIL_PASSWORD, MAIL_TO.
-      #   3. Have fetch_and_score.py write a flag (e.g. public/alert.txt) when
+      #   3. Have fetch_and_score.py write a flag (e.g. docs/alert.txt) when
       #      any trip is HIGH/MODERATE, and gate this step on it.
       #   4. Uncomment the step below.
       # ---------------------------------------------------------------------
       # - name: Send alert email
-      #   if: ${{ hashFiles('public/alert.txt') != '' }}
+      #   if: ${{ hashFiles('docs/alert.txt') != '' }}
       #   uses: dawidd6/action-send-mail@v3
       #   with:
       #     server_address: smtp.gmail.com
@@ -77,4 +77,4 @@ jobs:
       #     to: ${{ secrets.MAIL_TO }}
       #     from: Flight Delay Alerter <${{ secrets.MAIL_USERNAME }}>
       #     subject: "Flight delay risk alert"
-      #     body: file://public/alert.txt
+      #     body: file://docs/alert.txt

@@ -9,7 +9,7 @@ trip in ``trips.json`` dated today through ``WINDOW_DAYS`` days out it:
   3. Optionally pulls an Amadeus flight-delay probability.
 
 then combines the sources into a per-trip verdict (HIGH / MODERATE / LOW) and
-writes everything to ``public/data.json``.
+writes everything to ``docs/data.json``.
 
 Design rule: **never crash on a failed source.** Each fetch records
 ``"ok"`` / ``"error"`` / ``"skipped"`` and scoring proceeds on whatever is
@@ -52,7 +52,7 @@ AMADEUS_HOST = os.environ.get("AMADEUS_HOST", "https://test.api.amadeus.com")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TRIPS_PATH = REPO_ROOT / "trips.json"
-OUTPUT_PATH = REPO_ROOT / "public" / "data.json"
+OUTPUT_PATH = REPO_ROOT / "docs" / "data.json"
 
 HTTP_TIMEOUT = 25
 USER_AGENT = "flight-delay-alerter/1.0 (+https://github.com)"
