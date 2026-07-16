@@ -7,5 +7,11 @@
     "airline": "DL",
     "flight": "0563",
     "arrival_iata": "MCI"
+  },
+  {
+    "iata": "SAT",
+    "icao": "KSAT",
+    "date": "2026-07-16",
+    "depart_local": "13:00"
   }
 ]
