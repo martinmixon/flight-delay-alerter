@@ -1,0 +1,11 @@
+[
+  {
+    "iata": "ATL",
+    "icao": "KATL",
+    "date": "2026-07-20",
+    "depart_local": "08:15",
+    "airline": "DL",
+    "flight": "1234",
+    "arrival_iata": "LGA"
+  }
+]

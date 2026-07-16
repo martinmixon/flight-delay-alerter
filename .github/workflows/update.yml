@@ -6,6 +6,12 @@ on:
     # a few hours before departure if you like.
     - cron: "0 10 * * *"
   workflow_dispatch: {}  # manual "Run workflow" button
+  push:
+    branches: [main]
+    paths:
+      # Re-score promptly when trips change (e.g. edited via the in-app editor
+      # and committed). [skip ci] on the bot's own data commits avoids loops.
+      - "trips.json"
 
 permissions:
   contents: write  # allow the job to commit docs/data.json
@@ -44,14 +50,19 @@ jobs:
           LOCAL_TZ: ${{ vars.LOCAL_TZ }}
         run: python scripts/fetch_and_score.py
 
-      - name: Commit updated data.json (only if changed)
+      - name: Publish trips config to the site
+        # Mirror trips.json into docs/ so the in-app editor can load the
+        # committed trips as its baseline.
+        run: cp trips.json docs/trips.json
+
+      - name: Commit updated data (only if changed)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/data.json; then
-            echo "No change in docs/data.json — nothing to commit."
+          git add docs/data.json docs/trips.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
           else
-            git add docs/data.json
             git commit -m "chore: update delay data [skip ci]"
             git push
           fi

@@ -21,10 +21,82 @@
     <p class="loading">Loading latest risk data…</p>
   </main>
 
+  <!-- Trip editor (collapsible). Trips live in this device's storage; the
+       "Copy" + "Commit on GitHub" actions push them into trips.json so the
+       server-side Action can score them. -->
+  <section id="editor" class="editor" hidden aria-labelledby="editor-title">
+    <div class="editor-inner">
+      <h2 id="editor-title">Manage trips</h2>
+      <p class="editor-note">
+        Saved on this device. To score a trip, commit <code>trips.json</code>
+        (2 taps below) — the app can't reach the data feeds itself.
+      </p>
+
+      <form id="trip-form" class="trip-form" autocomplete="off">
+        <div class="field">
+          <label for="f-iata">Departure airport (IATA)</label>
+          <input id="f-iata" name="iata" type="text" inputmode="latin" maxlength="3"
+                 placeholder="ATL" required pattern="[A-Za-z]{3}" />
+        </div>
+        <div class="field">
+          <label for="f-icao">ICAO <span class="hint">(auto)</span></label>
+          <input id="f-icao" name="icao" type="text" maxlength="4"
+                 placeholder="KATL" pattern="[A-Za-z]{4}" />
+        </div>
+        <div class="field">
+          <label for="f-date">Date</label>
+          <input id="f-date" name="date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="f-time">Departure (local)</label>
+          <input id="f-time" name="depart_local" type="time" required />
+        </div>
+        <div class="field">
+          <label for="f-airline">Airline <span class="hint">(optional)</span></label>
+          <input id="f-airline" name="airline" type="text" maxlength="3" placeholder="DL" />
+        </div>
+        <div class="field">
+          <label for="f-flight">Flight # <span class="hint">(optional)</span></label>
+          <input id="f-flight" name="flight" type="text" inputmode="numeric" maxlength="5" placeholder="1234" />
+        </div>
+        <div class="field field-wide">
+          <label for="f-arr">Arrival airport (IATA) <span class="hint">(optional)</span></label>
+          <input id="f-arr" name="arrival_iata" type="text" maxlength="3" placeholder="LGA" pattern="[A-Za-z]{3}" />
+        </div>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="submit" id="form-submit" class="btn btn-primary">Add trip</button>
+          <button type="button" id="form-cancel" class="btn btn-ghost" hidden>Cancel</button>
+        </div>
+      </form>
+
+      <ul id="trip-list" class="trip-list" aria-label="Saved trips"></ul>
+
+      <div class="commit-box">
+        <p class="commit-step"><strong>Commit to score:</strong> tap Copy, then Open
+        &amp; paste over the file on GitHub, and Commit.</p>
+        <div class="commit-actions">
+          <button type="button" id="copy-json" class="btn btn-primary">Copy trips.json</button>
+          <a id="open-github" class="btn btn-ghost" target="_blank" rel="noopener">Open on GitHub ↗</a>
+        </div>
+        <button type="button" id="load-committed" class="btn btn-link">Load committed trips</button>
+        <details class="json-preview">
+          <summary>Preview trips.json</summary>
+          <pre id="json-out" class="json-out"></pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <footer class="app-footer">
     <p id="updated" class="updated"></p>
-    <button id="refresh" class="refresh" type="button">Refresh</button>
+    <div class="footer-actions">
+      <button id="toggle-editor" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="editor">Manage trips</button>
+      <button id="refresh" class="refresh" type="button">Refresh</button>
+    </div>
   </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="./app.js"></script>
 </body>
