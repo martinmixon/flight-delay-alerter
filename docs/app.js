@@ -1,12 +1,14 @@
 // Flight Delay Alerter — frontend. Two parts:
 //   1. Display: fetch the Action-generated data.json and render a card per trip.
-//   2. Editor:  add/edit upcoming trips on-device (localStorage), then copy the
-//               resulting trips.json and commit it on GitHub so the server-side
-//               Action can score them. No frameworks; vanilla JS.
+//   2. Editor:  add/edit upcoming trips on-device (localStorage), then "Save &
+//               score" posts them to the Cloudflare Worker, which commits
+//               trips.json so the server-side Action scores them (no GitHub
+//               visit). No frameworks; vanilla JS.
 
-const REPO = "martinmixon/flight-delay-alerter";
 const TRIPS_KEY = "fda_trips";
-const GITHUB_EDIT_URL = `https://github.com/${REPO}/edit/main/trips.json`;
+const AIRPORTS_KEY = "fda_airports";       // remembered airport codes for suggestions
+const WORKER_URL_KEY = "fda_worker_url";   // Cloudflare Worker endpoint
+const WORKER_KEY_KEY = "fda_worker_key";   // app key sent to the Worker (this device only)
 
 const tripsEl = document.getElementById("trips");
 const updatedEl = document.getElementById("updated");
@@ -78,7 +80,6 @@ function card(t) {
 function detail(t) {
   const w = t.weather || {};
   const f = t.faa || {};
-  const a = t.amadeus || {};
   const s = t.sources || {};
   const rows = [];
 
@@ -106,15 +107,6 @@ function detail(t) {
   } else {
     rows.push(row("FAA", srcText(s.faa), s.faa));
   }
-
-  let amText;
-  if (a.available && a.probability_bucket) {
-    amText = `${esc(a.probability_bucket)} probability`;
-    if (a.probability != null) amText += ` (${Math.round(a.probability * 100)}%)`;
-  } else {
-    amText = srcText(s.amadeus);
-  }
-  rows.push(row("Amadeus", amText, s.amadeus));
 
   const taf = w.taf_raw
     ? `<div class="detail"><dt>TAF</dt><dd class="taf">${esc(w.taf_raw)}</dd></div>`
@@ -152,22 +144,25 @@ const listEl = document.getElementById("trip-list");
 const errorEl = document.getElementById("form-error");
 const submitBtn = document.getElementById("form-submit");
 const cancelBtn = document.getElementById("form-cancel");
-const jsonOut = document.getElementById("json-out");
-const openGithubLink = document.getElementById("open-github");
 const toastEl = document.getElementById("toast");
+const airportListEl = document.getElementById("airport-list");
+const saveCloudBtn = document.getElementById("save-cloud");
+const saveStatusEl = document.getElementById("save-status");
+const settingsEl = document.getElementById("settings");
+const toggleSettingsBtn = document.getElementById("toggle-settings");
+const sUrl = document.getElementById("s-url");
+const sKey = document.getElementById("s-key");
 
 let trips = [];
 let editingIndex = null;
 
 const TRIP_ORDER = ["iata", "icao", "date", "depart_local", "airline", "flight", "arrival_iata"];
+const COMMON_AIRPORTS = ["ATL", "LGA", "JFK", "EWR", "BOS", "DCA", "ORD", "DFW", "DEN", "LAX", "SFO", "SEA"];
 
 function loadTrips() {
   try {
     const stored = localStorage.getItem(TRIPS_KEY);
-    if (stored) {
-      trips = JSON.parse(stored);
-      return true;
-    }
+    if (stored) { trips = JSON.parse(stored); return true; }
   } catch (e) {
     console.warn("Could not read saved trips:", e);
   }
@@ -176,7 +171,7 @@ function loadTrips() {
 
 function saveTrips() {
   try {
-    localStorage.setItem(TRIPS_KEY, JSON.stringify(trips));
+    localStorage.setItem(TRIPS_KEY, JSON.stringify(cleanTrips()));
   } catch (e) {
     console.warn("Could not save trips:", e);
   }
@@ -184,7 +179,7 @@ function saveTrips() {
 }
 
 // Fetch the committed trips.json the Action publishes alongside the site, so a
-// fresh device (or "Load committed trips") starts from the real repo state.
+// fresh device starts from the real repo state.
 async function fetchCommittedTrips() {
   const res = await fetch(`./trips.json?t=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -193,24 +188,34 @@ async function fetchCommittedTrips() {
 }
 
 async function initEditor() {
+  loadSettings();
+  renderAirportOptions();
   const hadLocal = loadTrips();
   if (!hadLocal) {
-    try {
-      trips = await fetchCommittedTrips();
-      saveTrips();
-    } catch (e) {
-      trips = [];
-      renderTrips();
-    }
-  } else {
-    renderTrips();
+    try { trips = await fetchCommittedTrips(); } catch (e) { trips = []; }
   }
-  openGithubLink.href = GITHUB_EDIT_URL;
+  saveTrips();
+}
+
+// --- Remembered airports (for the datalist suggestions) -------------------
+function loadAirports() {
+  try { return JSON.parse(localStorage.getItem(AIRPORTS_KEY) || "[]"); }
+  catch (e) { return []; }
+}
+function rememberAirports(...codes) {
+  const set = new Set(loadAirports());
+  codes.filter(Boolean).forEach((c) => set.add(c.toUpperCase()));
+  localStorage.setItem(AIRPORTS_KEY, JSON.stringify([...set]));
+  renderAirportOptions();
+}
+function renderAirportOptions() {
+  const codes = [...new Set([...loadAirports(), ...COMMON_AIRPORTS])];
+  airportListEl.innerHTML = codes.map((c) => `<option value="${esc(c)}"></option>`).join("");
 }
 
 function tripLabel(t) {
   const route = t.arrival_iata ? `${t.iata} → ${t.arrival_iata}` : t.iata;
-  const flight = [t.airline, t.flight].filter(Boolean).join(" ");
+  const flight = [t.airline, t.flight].filter(Boolean).join("");
   return `${route} · ${t.date} ${t.depart_local}${flight ? " · " + flight : ""}`;
 }
 
@@ -227,22 +232,26 @@ function renderTrips() {
         </span>
       </li>`).join("");
   }
-  jsonOut.textContent = toJson();
 }
 
-function toJson() {
-  // Emit trips with a stable field order, dropping empty optional fields.
-  const clean = trips.map((t) => {
+// Trips with a stable field order, dropping empty optional fields (payload shape).
+function cleanTrips() {
+  return trips.map((t) => {
     const out = {};
     for (const key of TRIP_ORDER) {
-      const val = t[key];
-      if (val !== undefined && val !== null && String(val).trim() !== "") {
-        out[key] = val;
-      }
+      const v = t[key];
+      if (v !== undefined && v !== null && String(v).trim() !== "") out[key] = v;
     }
     return out;
   });
-  return JSON.stringify(clean, null, 2) + "\n";
+}
+
+// Split a combined flight like "DL1234" into airline + number.
+function parseFlight(raw) {
+  const s = String(raw || "").toUpperCase().replace(/\s+/g, "");
+  const m = s.match(/^([A-Z]{2,3})(\d{1,5})$/);
+  if (m) return { airline: m[1], flight: m[2] };
+  return { airline: "", flight: s };
 }
 
 function readForm() {
@@ -250,37 +259,33 @@ function readForm() {
   const val = (k) => String(fd.get(k) || "").trim();
   const iata = val("iata").toUpperCase();
   let icao = val("icao").toUpperCase();
-  // Auto-derive a US ICAO (K + IATA) when left blank; user can override.
-  if (!icao && /^[A-Z]{3}$/.test(iata)) icao = "K" + iata;
+  if (!icao && /^[A-Z]{3}$/.test(iata)) icao = "K" + iata;  // auto US ICAO
+  const { airline, flight } = parseFlight(val("flight"));
 
   const trip = {
     iata,
     icao,
     date: val("date"),
     depart_local: val("depart_local"),
-    airline: val("airline").toUpperCase(),
-    flight: val("flight"),
+    airline,
+    flight,
     arrival_iata: val("arrival_iata").toUpperCase(),
   };
 
   const errors = [];
-  if (!/^[A-Z]{3}$/.test(trip.iata)) errors.push("Departure IATA must be 3 letters.");
+  if (!/^[A-Z]{3}$/.test(trip.iata)) errors.push("Departure airport must be a 3-letter code.");
   if (!/^[A-Z]{4}$/.test(trip.icao)) errors.push("ICAO must be 4 letters.");
   if (!trip.date) errors.push("Date is required.");
   if (!/^\d{2}:\d{2}$/.test(trip.depart_local)) errors.push("Departure time is required.");
   if (trip.arrival_iata && !/^[A-Z]{3}$/.test(trip.arrival_iata)) {
-    errors.push("Arrival IATA must be 3 letters.");
+    errors.push("Arrival must be a 3-letter code.");
   }
   return { trip, errors };
 }
 
 function showFormError(msgs) {
-  if (msgs.length) {
-    errorEl.textContent = msgs.join(" ");
-    errorEl.hidden = false;
-  } else {
-    errorEl.hidden = true;
-  }
+  errorEl.textContent = msgs.join(" ");
+  errorEl.hidden = msgs.length === 0;
 }
 
 form.addEventListener("submit", (e) => {
@@ -289,11 +294,9 @@ form.addEventListener("submit", (e) => {
   if (errors.length) return showFormError(errors);
   showFormError([]);
 
-  if (editingIndex === null) {
-    trips.push(trip);
-  } else {
-    trips[editingIndex] = trip;
-  }
+  if (editingIndex === null) trips.push(trip);
+  else trips[editingIndex] = trip;
+  rememberAirports(trip.iata, trip.arrival_iata);
   saveTrips();
   resetForm();
 });
@@ -305,9 +308,8 @@ function startEdit(i) {
   form.icao.value = t.icao || "";
   form.date.value = t.date || "";
   form.depart_local.value = t.depart_local || "";
-  form.airline.value = t.airline || "";
-  form.flight.value = t.flight || "";
   form.arrival_iata.value = t.arrival_iata || "";
+  form.flight.value = [t.airline, t.flight].filter(Boolean).join("");
   submitBtn.textContent = "Save changes";
   cancelBtn.hidden = false;
   showFormError([]);
@@ -338,43 +340,66 @@ listEl.addEventListener("click", (e) => {
   }
 });
 
-// Suggest an ICAO (K + IATA) as the user types the IATA, if ICAO is untouched.
+// Suggest an ICAO (K + IATA) as the user types the departure code.
 form.iata.addEventListener("input", () => {
   const iata = form.iata.value.trim().toUpperCase();
-  if (!form.icao.value.trim() && /^[A-Z]{3}$/.test(iata)) {
-    form.icao.placeholder = "K" + iata;
-  }
+  if (!form.icao.value.trim() && /^[A-Z]{3}$/.test(iata)) form.icao.placeholder = "K" + iata;
 });
 
-document.getElementById("copy-json").addEventListener("click", async () => {
-  const text = toJson();
-  try {
-    await navigator.clipboard.writeText(text);
-    toast("Copied trips.json — now tap Open on GitHub and paste it in.");
-  } catch (e) {
-    // Fallback for browsers without clipboard permission.
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    toast("Copied trips.json.");
-  }
+// --- Cloud settings (Worker URL + app key, this device only) --------------
+function loadSettings() {
+  sUrl.value = localStorage.getItem(WORKER_URL_KEY) || "";
+  sKey.value = localStorage.getItem(WORKER_KEY_KEY) || "";
+}
+document.getElementById("save-settings").addEventListener("click", () => {
+  localStorage.setItem(WORKER_URL_KEY, sUrl.value.trim().replace(/\/+$/, ""));
+  localStorage.setItem(WORKER_KEY_KEY, sKey.value);
+  toast("Cloud settings saved.");
+  settingsEl.hidden = true;
+  toggleSettingsBtn.setAttribute("aria-expanded", "false");
+});
+toggleSettingsBtn.addEventListener("click", () => {
+  const open = settingsEl.hasAttribute("hidden");
+  settingsEl.hidden = !open;
+  toggleSettingsBtn.setAttribute("aria-expanded", String(open));
 });
 
-document.getElementById("load-committed").addEventListener("click", async () => {
+function setSaveStatus(msg, kind) {
+  saveStatusEl.textContent = msg;
+  saveStatusEl.hidden = !msg;
+  saveStatusEl.className = "save-status" + (kind ? " " + kind : "");
+}
+
+// --- Save & score: POST trips to the Worker -------------------------------
+saveCloudBtn.addEventListener("click", async () => {
+  const url = (localStorage.getItem(WORKER_URL_KEY) || "").trim();
+  const key = localStorage.getItem(WORKER_KEY_KEY) || "";
+  if (!url || !key) {
+    setSaveStatus("Add your Worker URL and app key in Cloud settings first.", "error");
+    settingsEl.hidden = false;
+    toggleSettingsBtn.setAttribute("aria-expanded", "true");
+    return;
+  }
+  saveCloudBtn.disabled = true;
+  setSaveStatus("Saving…", "");
   try {
-    const committed = await fetchCommittedTrips();
-    if (trips.length && !confirm("Replace your on-device trips with the committed trips.json?")) {
-      return;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ trips: cleanTrips() }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 140);
+      throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""}`);
     }
-    trips = committed;
-    saveTrips();
-    resetForm();
-    toast("Loaded committed trips.");
-  } catch (e) {
-    toast("Couldn't load committed trips.");
+    setSaveStatus("Saved. Scoring now — results appear in about a minute.", "ok");
+    // The Action needs ~a minute to score + publish; refresh the cards then.
+    setTimeout(loadData, 75000);
+  } catch (err) {
+    console.error("Save failed:", err);
+    setSaveStatus("Couldn't save: " + err.message, "error");
+  } finally {
+    saveCloudBtn.disabled = false;
   }
 });
 

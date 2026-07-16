@@ -4,18 +4,22 @@ An installable phone app (PWA) that tells you, on days you're flying, whether
 your **departure airport** is likely to cause a delay. It's a static site hosted
 free on GitHub Pages; a scheduled GitHub Action does all the data fetching and
 scoring server-side and commits the result as `docs/data.json`, which the app
-displays.
+displays. A small Cloudflare Worker lets you add trips from the app itself.
 
 ## How it works
 
 ```
-GitHub Action (cron)  ──►  scripts/fetch_and_score.py  ──►  docs/data.json  ──►  PWA (GitHub Pages)
-   runs server-side           FAA + NWS weather + Amadeus        committed              displays cards
+App (Manage trips) ──► Worker ──► trips.json ─┐
+                                              ▼
+GitHub Action (cron/push) ──► scripts/fetch_and_score.py ──► docs/data.json ──► PWA
+   runs server-side                FAA + NWS weather              committed        displays cards
 ```
 
-Why server-side? GitHub Pages is static-only, the data APIs don't allow browser
-CORS, and Amadeus needs an OAuth secret that must never ship in client code. The
-Action runs where there's no CORS and secrets live in GitHub Secrets.
+Why server-side? GitHub Pages is static-only and the FAA + aviation-weather
+feeds block browser CORS (verified — the browser can send the request but can't
+read the reply), so scoring can't happen in the page. The Action runs where
+there's no CORS. And because a static page can't safely hold a write credential,
+the Worker (not the browser) holds the GitHub token used to save trips.
 
 ### Risk sources
 
@@ -23,16 +27,15 @@ Action runs where there's no CORS and secrets live in GitHub Secrets.
 | --- | --- |
 | **FAA NAS status** | Active ground stops, ground delay programs (GDP), closures, departure delays |
 | **NWS aviation weather (TAF)** | Ceiling, visibility, thunderstorms, gusty winds at departure time |
-| **Amadeus Flight Delay Prediction** *(optional)* | A statistical delay-probability bucket |
 
 ### Verdict
 
-- **HIGH** — FAA ground stop / GDP / closure, **or** thunderstorms / IFR at departure, **or** high Amadeus probability.
-- **MODERATE** — FAA delay (no stop), **or** MVFR / gusty weather, **or** moderate Amadeus probability.
-- **LOW** — no active FAA events, a favorable forecast, low probability.
+- **HIGH** — FAA ground stop / GDP / closure, **or** thunderstorms / IFR at departure.
+- **MODERATE** — FAA delay (no stop), **or** MVFR / gusty weather.
+- **LOW** — no active FAA events and a favorable forecast.
 
-The job **never crashes on a failed source** — it records `ok` / `error` /
-`skipped` per source and scores on whatever succeeded.
+The job **never crashes on a failed source** — it records `ok` / `error` per
+source and scores on whatever succeeded.
 
 ---
 
@@ -45,37 +48,23 @@ Push this repo to GitHub, then **Settings → Pages**:
 
 Your app will be served at `https://martinmixon.github.io/flight-delay-alerter/`.
 
-### 2. Add repo Secrets (Settings → Secrets and variables → Actions)
-This build **activates Amadeus**, so add:
-
-| Secret | Required? | Purpose |
-| --- | --- | --- |
-| `AMADEUS_CLIENT_ID` | yes (for Amadeus) | Amadeus Self-Service API key |
-| `AMADEUS_CLIENT_SECRET` | yes (for Amadeus) | Amadeus Self-Service API secret |
-
-Get free keys at <https://developers.amadeus.com> (Self-Service). Until they're
-added, the Amadeus source reports `skipped`/`error` and the app still scores on
-FAA + weather.
-
-Optional **Variables** (Settings → Secrets and variables → Actions → Variables):
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `AMADEUS_HOST` | `https://test.api.amadeus.com` | Set to `https://api.amadeus.com` for production keys |
-| `LOCAL_TZ` | `America/New_York` | Timezone for the "last updated" display string |
+### 2. (Optional) set a timezone variable
+No API secrets are needed for scoring. Optionally, under **Settings → Secrets and
+variables → Actions → Variables**, set `LOCAL_TZ` (default `America/New_York`)
+for the "last updated" display string.
 
 Email alerts are **off** in this build. To turn them on later, see the commented
 block at the bottom of `.github/workflows/update.yml`.
 
-### 3. Add your trips
+### 3. Deploy the trip-saving Worker (to add trips in-app)
+Follow [`worker/README.md`](worker/README.md): deploy the Cloudflare Worker, set
+its `GITHUB_TOKEN` + `APP_KEY` secrets, then in the app go to **Manage trips →
+Cloud settings** and paste the Worker URL + app key. After that, **Save & score**
+in the app writes your trips and the cards update about a minute later (the
+workflow has a `push` trigger on `trips.json`).
 
-**Easiest — in the app:** open the site, tap **Manage trips**, add each flight,
-then tap **Copy trips.json** → **Open on GitHub** and paste it over the file and
-commit. Trips you add are saved on your device; committing them is what lets the
-server-side Action score them. A commit to `trips.json` re-scores within ~a
-minute (the workflow has a `push` trigger on that file).
-
-**Or edit `trips.json` directly** — an array of upcoming flights:
+Prefer not to run the Worker? You can always edit `trips.json` directly in the
+repo — an array of upcoming flights:
 
 ```json
 [
@@ -94,15 +83,10 @@ minute (the workflow has a `push` trigger on that file).
 - `iata` / `icao` — departure airport codes (required).
 - `date` — `YYYY-MM-DD` (required).
 - `depart_local` — scheduled local departure `HH:MM`, 24h (required).
-- `airline` / `flight` / `arrival_iata` — optional; enable the Amadeus source.
+- `airline` / `flight` / `arrival_iata` — optional; shown on the card.
 
 Only trips dated **today through 2 days out** (`WINDOW_DAYS` in
 `scripts/fetch_and_score.py`) are scored.
-
-> **Amadeus note:** the prediction API also wants arrival time, aircraft type,
-> and flight duration. Add `arrivalTime`, `aircraftCode`, and `duration` fields
-> to a trip to get a full prediction; without them the Amadeus call degrades
-> gracefully.
 
 ### 4. Install on your phone
 Open the Pages URL in mobile Chrome/Safari → **Add to Home Screen**. It installs
@@ -155,8 +139,9 @@ docs/                   # served by GitHub Pages
   data.json             # GENERATED by the Action
   trips.json            # GENERATED mirror of /trips.json (for the in-app editor)
 scripts/
-  fetch_and_score.py    # the backend job
+  fetch_and_score.py    # the backend job (FAA + weather scoring)
   make_icons.py         # icon generator (dev-only)
+worker/                 # Cloudflare Worker: saves trips from the app (see its README)
 tests/                  # offline unit tests + fixtures
 trips.json              # your upcoming trips
 .github/workflows/update.yml

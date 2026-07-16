@@ -1,0 +1,14 @@
+name = "flight-trips"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Non-secret config. Edit ALLOW_ORIGIN if your Pages URL differs.
+[vars]
+REPO = "martinmixon/flight-delay-alerter"
+ALLOW_ORIGIN = "https://martinmixon.github.io"
+BRANCH = "main"
+TRIPS_PATH = "trips.json"
+
+# Secrets are NOT stored here. Set them once with:
+#   wrangler secret put GITHUB_TOKEN
+#   wrangler secret put APP_KEY

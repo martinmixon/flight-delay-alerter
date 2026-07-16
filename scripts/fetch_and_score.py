@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Flight Delay Risk Alerter — backend job.
 
-Runs inside GitHub Actions (server-side, no CORS, secrets from env). For every
-trip in ``trips.json`` dated today through ``WINDOW_DAYS`` days out it:
+Runs inside GitHub Actions (server-side, no CORS). For every trip in
+``trips.json`` dated today through ``WINDOW_DAYS`` days out it:
 
   1. Pulls FAA NAS status (ground stops, GDPs, closures, delays).
   2. Pulls NWS aviation weather (TAF) for the departure airport.
-  3. Optionally pulls an Amadeus flight-delay probability.
 
 then combines the sources into a per-trip verdict (HIGH / MODERATE / LOW) and
 writes everything to ``docs/data.json``.
 
+Sources: FAA NAS status + NWS aviation weather (TAF). Both are public feeds
+that block browser CORS, which is why scoring runs here (server-side) rather
+than in the PWA.
+
 Design rule: **never crash on a failed source.** Each fetch records
-``"ok"`` / ``"error"`` / ``"skipped"`` and scoring proceeds on whatever is
-available. The pure functions near the top (``parse_faa_status``,
-``extract_forecast_values``, ``taf_risk_flags``, ``flight_category``,
-``score``) take no network and are unit-tested against fixtures in ``tests/``.
+``"ok"`` / ``"error"`` and scoring proceeds on whatever is available. The pure
+functions near the top (``parse_faa_status``, ``extract_forecast_values``,
+``taf_risk_flags``, ``flight_category``, ``score``) take no network and are
+unit-tested against fixtures in ``tests/``.
 """
 from __future__ import annotations
 
@@ -46,9 +49,6 @@ GUST_STRONG_KT = 25    # gusts at/above this are a risk flag
 FAA_URL = "https://nasstatus.faa.gov/api/airport-status-information"
 TAF_URL = "https://aviationweather.gov/api/data/taf"
 METAR_URL = "https://aviationweather.gov/api/data/metar"
-
-# Amadeus (Self-Service defaults to the test host; override with AMADEUS_HOST)
-AMADEUS_HOST = os.environ.get("AMADEUS_HOST", "https://test.api.amadeus.com")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TRIPS_PATH = REPO_ROOT / "trips.json"
@@ -275,12 +275,11 @@ def _to_int(raw):
 _LEVELS = {0: "LOW", 1: "MODERATE", 2: "HIGH"}
 
 
-def score(faa: dict | None, weather: dict | None, amadeus: dict | None) -> tuple[str, list]:
-    """Combine the three sources into a verdict + list of human reasons.
+def score(faa: dict | None, weather: dict | None) -> tuple[str, list]:
+    """Combine the sources into a verdict + list of human reasons.
 
-    HIGH     : FAA ground stop/GDP/closure, OR thunderstorms/IFR at departure,
-               OR high Amadeus probability.
-    MODERATE : FAA delay (no stop), OR MVFR/gusty weather, OR moderate Amadeus.
+    HIGH     : FAA ground stop/GDP/closure, OR thunderstorms/IFR at departure.
+    MODERATE : FAA delay (no stop), OR MVFR/gusty weather.
     LOW      : nothing notable.
     """
     level = 0
@@ -314,15 +313,6 @@ def score(faa: dict | None, weather: dict | None, amadeus: dict | None) -> tuple
         if weather.get("gusty"):
             level = max(level, 1)
             reasons.append(f"Gusty winds forecast ({weather.get('gust_kt')} kt)")
-
-    if amadeus and amadeus.get("available"):
-        bucket = amadeus.get("probability_bucket")
-        if bucket == "high":
-            level = max(level, 2)
-            reasons.append("Amadeus predicts a high probability of delay")
-        elif bucket == "moderate":
-            level = max(level, 1)
-            reasons.append("Amadeus predicts a moderate probability of delay")
 
     if not reasons:
         reasons.append("No active FAA events and a favorable forecast")
@@ -365,73 +355,6 @@ def fetch_weather(icao: str, depart_dt_utc: datetime) -> tuple[str, dict | None]
     except Exception as exc:  # noqa: BLE001
         _warn(f"Weather fetch/parse failed for {icao}: {exc}")
         return "error", None
-
-
-def fetch_amadeus(trip: dict, depart_dt_utc: datetime) -> tuple[str, dict]:
-    """Flight-delay probability from Amadeus. Requires client credentials in
-    env; degrades to ``skipped`` / ``error`` (never raises)."""
-    client_id = os.environ.get("AMADEUS_CLIENT_ID")
-    client_secret = os.environ.get("AMADEUS_CLIENT_SECRET")
-    if not (client_id and client_secret):
-        return "skipped", {"available": False, "probability_bucket": None, "note": "no credentials"}
-    if not (trip.get("airline") and trip.get("flight") and trip.get("arrival_iata")):
-        return "skipped", {"available": False, "probability_bucket": None, "note": "missing flight details"}
-
-    try:
-        token_resp = requests.post(
-            f"{AMADEUS_HOST}/v1/security/oauth2/token",
-            data={
-                "grant_type": "client_credentials",
-                "client_id": client_id,
-                "client_secret": client_secret,
-            },
-            timeout=HTTP_TIMEOUT,
-        )
-        token_resp.raise_for_status()
-        token = token_resp.json()["access_token"]
-
-        params = {
-            "originLocationCode": trip["iata"],
-            "destinationLocationCode": trip["arrival_iata"],
-            "departureDate": trip["date"],
-            "departureTime": f"{trip['depart_local']}:00",
-            "carrierCode": trip["airline"],
-            "flightNumber": str(trip["flight"]),
-        }
-        # These are required by the API; include if the trip supplies them.
-        for key in ("arrivalDate", "arrivalTime", "aircraftCode", "duration"):
-            if trip.get(key):
-                params[key] = trip[key]
-
-        pred = requests.get(
-            f"{AMADEUS_HOST}/v1/travel/predictions/flight-delay",
-            params=params,
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=HTTP_TIMEOUT,
-        )
-        pred.raise_for_status()
-        bucket, prob = _amadeus_bucket(pred.json())
-        return "ok", {"available": True, "probability_bucket": bucket, "probability": prob}
-    except Exception as exc:  # noqa: BLE001
-        _warn(f"Amadeus prediction failed for {trip.get('iata')}: {exc}")
-        return "error", {"available": False, "probability_bucket": None, "note": str(exc)[:120]}
-
-
-def _amadeus_bucket(payload: dict) -> tuple[str | None, float | None]:
-    """Map Amadeus delay-prediction results to low/moderate/high buckets."""
-    best_label, best_prob = None, -1.0
-    for item in payload.get("data") or []:
-        prob = float(item.get("probability", 0) or 0)
-        if prob > best_prob:
-            best_prob = prob
-            best_label = (item.get("result") or "").upper()
-    if best_label is None:
-        return None, None
-    if best_label in ("OVER_120_MINUTES", "BETWEEN_60_AND_120_MINUTES"):
-        return "high", best_prob
-    if best_label == "BETWEEN_30_AND_60_MINUTES":
-        return "moderate", best_prob
-    return "low", best_prob
 
 
 # ===========================================================================
@@ -491,9 +414,8 @@ def build_report(now_utc: datetime | None = None) -> dict:
 
         faa_status, faa = fetch_faa(trip["iata"])
         wx_status, weather = fetch_weather(trip["icao"], depart_utc)
-        am_status, amadeus = fetch_amadeus(trip, depart_utc)
 
-        verdict, reasons = score(faa, weather, amadeus)
+        verdict, reasons = score(faa, weather)
         report_trips.append({
             "iata": trip["iata"],
             "icao": trip["icao"],
@@ -506,8 +428,7 @@ def build_report(now_utc: datetime | None = None) -> dict:
             "reasons": reasons,
             "faa": faa or {},
             "weather": weather or {},
-            "amadeus": amadeus or {"available": False, "probability_bucket": None},
-            "sources": {"faa": faa_status, "weather": wx_status, "amadeus": am_status},
+            "sources": {"faa": faa_status, "weather": wx_status},
         })
 
     local_tz = ZoneInfo(os.environ.get("LOCAL_TZ", "America/New_York"))

@@ -21,22 +21,22 @@
     <p class="loading">Loading latest risk data…</p>
   </main>
 
-  <!-- Trip editor (collapsible). Trips live in this device's storage; the
-       "Copy" + "Commit on GitHub" actions push them into trips.json so the
-       server-side Action can score them. -->
+  <!-- Trip editor (collapsible). Trips live on this device; "Save & score"
+       posts them to the Cloudflare Worker, which commits trips.json and lets
+       the server-side Action score them. No GitHub visit needed. -->
   <section id="editor" class="editor" hidden aria-labelledby="editor-title">
     <div class="editor-inner">
       <h2 id="editor-title">Manage trips</h2>
       <p class="editor-note">
-        Saved on this device. To score a trip, commit <code>trips.json</code>
-        (2 taps below) — the app can't reach the data feeds itself.
+        Add your upcoming flights. They're saved on this device, and
+        <strong>Save &amp; score</strong> sends them to the cloud to be scored.
       </p>
 
       <form id="trip-form" class="trip-form" autocomplete="off">
         <div class="field">
-          <label for="f-iata">Departure airport (IATA)</label>
+          <label for="f-iata">Departure airport</label>
           <input id="f-iata" name="iata" type="text" inputmode="latin" maxlength="3"
-                 placeholder="ATL" required pattern="[A-Za-z]{3}" />
+                 placeholder="ATL" required pattern="[A-Za-z]{3}" list="airport-list" />
         </div>
         <div class="field">
           <label for="f-icao">ICAO <span class="hint">(auto)</span></label>
@@ -52,16 +52,12 @@
           <input id="f-time" name="depart_local" type="time" required />
         </div>
         <div class="field">
-          <label for="f-airline">Airline <span class="hint">(optional)</span></label>
-          <input id="f-airline" name="airline" type="text" maxlength="3" placeholder="DL" />
+          <label for="f-arr">Arrival <span class="hint">(optional)</span></label>
+          <input id="f-arr" name="arrival_iata" type="text" maxlength="3" placeholder="LGA" pattern="[A-Za-z]{3}" list="airport-list" />
         </div>
         <div class="field">
-          <label for="f-flight">Flight # <span class="hint">(optional)</span></label>
-          <input id="f-flight" name="flight" type="text" inputmode="numeric" maxlength="5" placeholder="1234" />
-        </div>
-        <div class="field field-wide">
-          <label for="f-arr">Arrival airport (IATA) <span class="hint">(optional)</span></label>
-          <input id="f-arr" name="arrival_iata" type="text" maxlength="3" placeholder="LGA" pattern="[A-Za-z]{3}" />
+          <label for="f-flight">Flight <span class="hint">(optional)</span></label>
+          <input id="f-flight" name="flight" type="text" inputmode="latin" maxlength="8" placeholder="DL1234" />
         </div>
         <p id="form-error" class="form-error" role="alert" hidden></p>
         <div class="form-actions">
@@ -69,21 +65,29 @@
           <button type="button" id="form-cancel" class="btn btn-ghost" hidden>Cancel</button>
         </div>
       </form>
+      <datalist id="airport-list"></datalist>
 
       <ul id="trip-list" class="trip-list" aria-label="Saved trips"></ul>
 
-      <div class="commit-box">
-        <p class="commit-step"><strong>Commit to score:</strong> tap Copy, then Open
-        &amp; paste over the file on GitHub, and Commit.</p>
-        <div class="commit-actions">
-          <button type="button" id="copy-json" class="btn btn-primary">Copy trips.json</button>
-          <a id="open-github" class="btn btn-ghost" target="_blank" rel="noopener">Open on GitHub ↗</a>
+      <div class="save-box">
+        <button type="button" id="save-cloud" class="btn btn-primary btn-block">Save &amp; score</button>
+        <p id="save-status" class="save-status" role="status" hidden></p>
+        <button type="button" id="toggle-settings" class="btn btn-link" aria-expanded="false" aria-controls="settings">Cloud settings</button>
+        <div id="settings" class="settings" hidden>
+          <p class="settings-note">
+            One-time setup: paste the Worker URL and the app key you set on it.
+            Stored only on this device.
+          </p>
+          <div class="field field-wide">
+            <label for="s-url">Worker URL</label>
+            <input id="s-url" type="url" inputmode="url" placeholder="https://flight-trips.you.workers.dev" />
+          </div>
+          <div class="field field-wide">
+            <label for="s-key">App key</label>
+            <input id="s-key" type="password" placeholder="the key you set on the Worker" />
+          </div>
+          <button type="button" id="save-settings" class="btn btn-ghost">Save settings</button>
         </div>
-        <button type="button" id="load-committed" class="btn btn-link">Load committed trips</button>
-        <details class="json-preview">
-          <summary>Preview trips.json</summary>
-          <pre id="json-out" class="json-out"></pre>
-        </details>
       </div>
     </div>
   </section>

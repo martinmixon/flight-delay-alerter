@@ -40,12 +40,6 @@ jobs:
 
       - name: Fetch feeds and score risk
         env:
-          # Amadeus (Self-Service). Add these as repo secrets to enable the
-          # flight-delay probability source.
-          AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
-          AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
-          # Override if you use the production Amadeus host instead of test.
-          AMADEUS_HOST: ${{ vars.AMADEUS_HOST }}
           # Local timezone used for the "generated_local" display string.
           LOCAL_TZ: ${{ vars.LOCAL_TZ }}
         run: python scripts/fetch_and_score.py

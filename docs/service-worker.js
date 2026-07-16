@@ -2,7 +2,7 @@
 // fallback) for data.json — so the PWA installs, loads offline, and always
 // prefers fresh risk data when online.
 
-const CACHE = "flight-delay-alerter-v2";
+const CACHE = "flight-delay-alerter-v3";
 const SHELL = [
   "./",
   "./index.html",
