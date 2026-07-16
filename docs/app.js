@@ -9,6 +9,10 @@ const TRIPS_KEY = "fda_trips";
 const AIRPORTS_KEY = "fda_airports";       // remembered airport codes for suggestions
 const WORKER_URL_KEY = "fda_worker_url";   // Cloudflare Worker endpoint
 const WORKER_KEY_KEY = "fda_worker_key";   // app key sent to the Worker (this device only)
+// Worker URL is public (not a secret), so it's safe to ship as a default. The
+// app key is NOT defaulted — it lives only in this device's storage, because
+// hardcoding it in this public site would let anyone write to the repo.
+const DEFAULT_WORKER_URL = "https://flight-trips.martinmixon.workers.dev";
 
 const tripsEl = document.getElementById("trips");
 const updatedEl = document.getElementById("updated");
@@ -348,7 +352,7 @@ form.iata.addEventListener("input", () => {
 
 // --- Cloud settings (Worker URL + app key, this device only) --------------
 function loadSettings() {
-  sUrl.value = localStorage.getItem(WORKER_URL_KEY) || "";
+  sUrl.value = localStorage.getItem(WORKER_URL_KEY) || DEFAULT_WORKER_URL;
   sKey.value = localStorage.getItem(WORKER_KEY_KEY) || "";
 }
 document.getElementById("save-settings").addEventListener("click", () => {
@@ -372,7 +376,7 @@ function setSaveStatus(msg, kind) {
 
 // --- Save & score: POST trips to the Worker -------------------------------
 saveCloudBtn.addEventListener("click", async () => {
-  const url = (localStorage.getItem(WORKER_URL_KEY) || "").trim();
+  const url = (localStorage.getItem(WORKER_URL_KEY) || DEFAULT_WORKER_URL).trim();
   const key = localStorage.getItem(WORKER_KEY_KEY) || "";
   if (!url || !key) {
     setSaveStatus("Add your Worker URL and app key in Cloud settings first.", "error");
