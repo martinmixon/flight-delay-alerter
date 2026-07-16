@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-07-16T16:43:04Z",
-  "generated_local": "2026-07-16 12:43 EDT",
+  "generated_utc": "2026-07-16T16:44:40Z",
+  "generated_local": "2026-07-16 12:44 EDT",
   "window_days": 2,
   "trips": [
     {
@@ -71,6 +71,43 @@
         "gusty": false,
         "ifr": false,
         "taf_raw": "TAF KSAT 161446Z 1615/1718 12008KT P6SM VCSH BKN010 OVC035 FM161800 14010KT P6SM VCSH BKN040 FM170300 14008KT P6SM SCT040 FM170600 14010KT P6SM BKN015"
+      },
+      "sources": {
+        "faa": "ok",
+        "weather": "ok"
+      }
+    },
+    {
+      "iata": "SEA",
+      "icao": "KSEA",
+      "date": "2026-07-16",
+      "depart_local": "11:00",
+      "airline": null,
+      "flight": null,
+      "arrival_iata": null,
+      "verdict": "LOW",
+      "reasons": [
+        "No active FAA events and a favorable forecast"
+      ],
+      "faa": {
+        "ground_stop": false,
+        "gdp": false,
+        "closure": false,
+        "delay": null,
+        "reason": null,
+        "events": []
+      },
+      "weather": {
+        "flight_category": "VFR",
+        "ceiling_ft": 7000,
+        "vis_mi": 6.0,
+        "ts": false,
+        "gust_kt": null,
+        "low_ceiling": false,
+        "low_vis": false,
+        "gusty": false,
+        "ifr": false,
+        "taf_raw": "TAF KSEA 161432Z 1615/1718 22007KT 3SM TSRA BR BKN025CB BKN070 FM161700 22009KT P6SM -SHRA BKN070 FM162100 22011KT P6SM BKN040 PROB30 1621/1624 3SM TSRA BR BKN020CB BKN040 FM170000 22007KT P6SM BKN050"
       },
       "sources": {
         "faa": "ok",
