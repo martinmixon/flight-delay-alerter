@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-07-16T16:33:08Z",
-  "generated_local": "2026-07-16 12:33 EDT",
+  "generated_utc": "2026-07-16T16:43:04Z",
+  "generated_local": "2026-07-16 12:43 EDT",
   "window_days": 2,
   "trips": [
     {
@@ -34,6 +34,43 @@
         "gusty": false,
         "ifr": false,
         "taf_raw": "TAF KLGA 161442Z 1615/1718 28010KT 5SM FU SCT050 BKN250 FM161800 26014G22KT 5SM FU SCT050 BKN250 TEMPO 1619/1623 3SM FU FM162300 31012G21KT 5SM FU FEW050 BKN250 TEMPO 1623/1701 3SM FU FM170100 33009KT 5SM FU BKN250 FM170600 33005KT 6SM FU BKN250 FM171300 01007KT P6SM SCT250"
+      },
+      "sources": {
+        "faa": "ok",
+        "weather": "ok"
+      }
+    },
+    {
+      "iata": "SAT",
+      "icao": "KSAT",
+      "date": "2026-07-16",
+      "depart_local": "13:00",
+      "airline": null,
+      "flight": null,
+      "arrival_iata": null,
+      "verdict": "MODERATE",
+      "reasons": [
+        "MVFR (marginal) conditions forecast"
+      ],
+      "faa": {
+        "ground_stop": false,
+        "gdp": false,
+        "closure": false,
+        "delay": null,
+        "reason": null,
+        "events": []
+      },
+      "weather": {
+        "flight_category": "MVFR",
+        "ceiling_ft": 1000,
+        "vis_mi": 6.0,
+        "ts": false,
+        "gust_kt": null,
+        "low_ceiling": false,
+        "low_vis": false,
+        "gusty": false,
+        "ifr": false,
+        "taf_raw": "TAF KSAT 161446Z 1615/1718 12008KT P6SM VCSH BKN010 OVC035 FM161800 14010KT P6SM VCSH BKN040 FM170300 14008KT P6SM SCT040 FM170600 14010KT P6SM BKN015"
       },
       "sources": {
         "faa": "ok",
