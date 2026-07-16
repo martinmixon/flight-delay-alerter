@@ -1,45 +1,8 @@
 {
-  "generated_utc": "2026-07-16T16:26:38Z",
-  "generated_local": "2026-07-16 12:26 EDT",
+  "generated_utc": "2026-07-16T16:33:08Z",
+  "generated_local": "2026-07-16 12:33 EDT",
   "window_days": 2,
   "trips": [
-    {
-      "iata": "LGA",
-      "icao": "KLGA",
-      "date": "2026-07-16",
-      "depart_local": "19:55",
-      "airline": null,
-      "flight": "0563",
-      "arrival_iata": "MCI",
-      "verdict": "MODERATE",
-      "reasons": [
-        "MVFR (marginal) conditions forecast"
-      ],
-      "faa": {
-        "ground_stop": false,
-        "gdp": false,
-        "closure": false,
-        "delay": null,
-        "reason": null,
-        "events": []
-      },
-      "weather": {
-        "flight_category": "MVFR",
-        "ceiling_ft": 25000,
-        "vis_mi": 5.0,
-        "ts": false,
-        "gust_kt": 21,
-        "low_ceiling": false,
-        "low_vis": false,
-        "gusty": false,
-        "ifr": false,
-        "taf_raw": "TAF KLGA 161442Z 1615/1718 28010KT 5SM FU SCT050 BKN250 FM161800 26014G22KT 5SM FU SCT050 BKN250 TEMPO 1619/1623 3SM FU FM162300 31012G21KT 5SM FU FEW050 BKN250 TEMPO 1623/1701 3SM FU FM170100 33009KT 5SM FU BKN250 FM170600 33005KT 6SM FU BKN250 FM171300 01007KT P6SM SCT250"
-      },
-      "sources": {
-        "faa": "ok",
-        "weather": "ok"
-      }
-    },
     {
       "iata": "LGA",
       "icao": "KLGA",

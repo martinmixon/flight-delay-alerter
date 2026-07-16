@@ -4,14 +4,6 @@
     "icao": "KLGA",
     "date": "2026-07-16",
     "depart_local": "19:55",
-    "flight": "0563",
-    "arrival_iata": "MCI"
-  },
-  {
-    "iata": "LGA",
-    "icao": "KLGA",
-    "date": "2026-07-16",
-    "depart_local": "19:55",
     "airline": "DL",
     "flight": "0563",
     "arrival_iata": "MCI"
