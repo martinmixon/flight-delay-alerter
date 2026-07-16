@@ -43,8 +43,7 @@ Push this repo to GitHub, then **Settings → Pages**:
 - **Source:** *Deploy from a branch*
 - **Branch:** `main`, **folder:** `/public`
 
-Your app will be served at `https://<your-username>.github.io/flight-delay-alerter/`.
-> Replace `<your-username>` throughout once you know your repo URL.
+Your app will be served at `https://martinmixon.github.io/flight-delay-alerter/`.
 
 ### 2. Add repo Secrets (Settings → Secrets and variables → Actions)
 This build **activates Amadeus**, so add:
