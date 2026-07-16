@@ -431,13 +431,25 @@ def build_report(now_utc: datetime | None = None) -> dict:
             "sources": {"faa": faa_status, "weather": wx_status},
         })
 
-    local_tz = ZoneInfo(os.environ.get("LOCAL_TZ", "America/New_York"))
+    local_tz = _local_zone()
     return {
         "generated_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "generated_local": now_utc.astimezone(local_tz).strftime("%Y-%m-%d %H:%M %Z"),
         "window_days": WINDOW_DAYS,
         "trips": report_trips,
     }
+
+
+def _local_zone():
+    """Resolve the display timezone from LOCAL_TZ, tolerating an empty or
+    invalid value (GitHub passes unset repo vars as an empty string, not
+    absent). Falls back to America/New_York, then UTC."""
+    name = os.environ.get("LOCAL_TZ") or "America/New_York"
+    try:
+        return ZoneInfo(name)
+    except Exception:  # noqa: BLE001 — never crash the report over the tz label
+        _warn(f"Invalid LOCAL_TZ '{name}'; using UTC")
+        return timezone.utc
 
 
 def _warn(msg: str) -> None:
